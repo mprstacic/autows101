@@ -1,0 +1,53 @@
+---
+- name: MY AS3 PLAYBOOK
+  #hosts: webservers
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars: 
+    uri_method: PATCH
+
+  vars_prompt:
+    - name: bigip_user
+      prompt: "enter username: "
+      private: no
+    - name: bigip_pass
+      prompt: "enter password: "
+
+
+  #vars_files:
+  #- ../creds/bigip_creds.yaml
+  
+  tasks:
+
+  - name: create_new_app
+    uri:
+      url: https://18.132.233.22/mgmt/shared/appsvcs/declare
+      user: "{{ bigip_user }}"
+      password: "{{ bigip_pass }}"
+      #method: POST
+      method: "{{ uri_method }}"
+      body: "{{ lookup('file','as3-declaration.json') }}"
+      force_basic_auth: yes
+      # task will only be marked as successful if HTTP response code is 200
+      status_code: 
+        - 200
+        - 204
+      body_format: json
+      validate_certs: no
+    register: as3_response
+    retries: 30
+    delay: 5
+    #until: ('status' in as3_response and (as3_result.status == 200 or as3_result.status == 204 ))
+
+  - name: DEBUG OUT AS3 RESPONSE
+    debug:
+      msg: "Here is the app: {{ as3_response.json.declaration.Matko_01.app_01 }}"
+  
+  - name: DEBUG ALL VARS
+    debug:
+        msg: "{{ vars }}" 
+
+
+...
